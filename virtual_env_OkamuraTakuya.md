@@ -27,8 +27,44 @@ Vagrantを用いて仮想環境を構築し、
 
 ***
 
+## 目次
+
+1. 1. Vagrant 作業用ディレクトリの作成
+   2. Vagrantfile の編集
+   3. Vagrant プラグインのインストール  
+
+2. 1. Vagrant を使用してゲストOSの起動
+   2. ゲストOSへのログイン
+   3. パッケージのインストール
+   4. PHPのインストール
+   5. composerのインストール
+
+3. 1. Laravel のInstallと、Project の作成
+
+4. 1. データベースのインストール
+   1. データベースの作成
+   2. Laravel側でDBを使用するための設定
+   3. テーブルの作成
+
+5. 1. sample_appへのログイン機能の実装
+
+6. 1. Nginx のインストール
+   1. Nginx内でLaravelを動かす
+   2. アプリが動かなかった時(ファイヤーウォール編)
+   3. アプリが動かなかった時(Forbidden 403編)
+   4. アプリが動かなかった時(操作権限編)
+
+7. 1. 実際に新規登録
+
+8. 1. 追加説明
+
+9. 1. 所感
+
+10. 1. 参考サイト一覧 
+***
+
 ## 環境構築の流れ
-### Vagrant 作業用ディレクトリの作成  
+### 1-1 Vagrant 作業用ディレクトリの作成  
 まず最初に、ご自身の作業用ディレクトリかデスクトップに、Vagrant の作業用ディレクトリを作成してください。  
 ※作成したディレクトリを後々移動すると、ゲストOSへのログインが上手く行かなくなってしまうので、ご注意ください。
 
@@ -51,17 +87,27 @@ vagrant init centos/7
 
 vagrant init を実行後、"A Vagrantfile has been placed in this directory" がターミナル常に表示されれば、問題ありません。
 
-### Vagrantfile の編集
+### 1-2 Vagrantfile の編集
 今回は三箇所の編集を行います。  
 ファイルをエディタで開いてください。
 
 ```
 1. config.vm.network "forwarded_port", guest: 80, host: 8080(注2)
 
-2. config.vm.network "private_network", ip:"192.168.33.19"(注3)
+2. config.vm.network "private_network", ip:"192.168.33.10"(注3)
 ```
 
-上記2つのコメントを外し、2つ目のip の最後を10から19に変更してください。
+上記2つのコメントを外してください。
+
+また、
+
+```
+config.vm.network "private_network", ip:"192.168.33.10"
+を
+config.vm.network "private_network", ip:"192.168.33.19"
+```
+
+へと変更してください。
 
 ```
 3. config.vm.synced_folder "../data", "/vagrant_data" 
@@ -71,7 +117,7 @@ vagrant init を実行後、"A Vagrantfile has been placed in this directory" �
 
 に変更してください。
 
-### Vagrant プラグインのインストール
+### 1-3 Vagrant プラグインのインストール
 Vagrant には様々なプラグイン(拡張機能)が用意されており、今回はvagrant-vbguest(注5) という   
 プラグインをインストールします。
 
@@ -81,12 +127,15 @@ vagrant plugin install vagrant-vbguest
 
 正常にインストールが完了しているか確認
 vagrant plugin list 
+
+バージョンが表示されれば、問題なくインストールされています。
+vagrant-vbguest (0.21.0, global)
 ```
 
 以上で、仮想環境を構築する準備は終了です。  
 次で、いよいよゲストOSを起動させます。
 
-### Vagrantを使用してゲストOSの起動
+### 2-1 Vagrantを使用してゲストOSの起動
 laravel_app_by_vagrantディレクトリにて以下のコマンドを実行することで、ゲストOSを立ち上げることができます。
 
 ```
@@ -96,7 +145,7 @@ vagrant up
 ※この際に、vbguest のバージョンによってエラーが出る場合があります。  
 その際には、`Vagrantで共有フォルダのエラーが出るのでその対応` の記事を参考に対応をお願い致します。
 
-### ゲストOSへのログイン
+### 2-2 ゲストOSへのログイン
 起動が正常に終了すれば、現在使用しているPCのOSであるホストOSの上に、全く別のゲストOSが立ち上がったことになります。  
 
 今回は、VirtualBoxが提供するネットワークを通じて、ターミナル上でホストOSからゲストOS(リモートマシン)にログインします。  
@@ -118,14 +167,14 @@ vagrant ssh
 [vagrant@localhost ~]$
 ```
 
-### パッケージのインストール
+### 2-3 パッケージのインストール
 
 ```
 このコマンドで、開発に必要なパッケージを一括でインストールすることができる(注6〜9)  
 sudo yum -y groupinstall "development tools"  
 ```
 
-### PHP のインストール
+### 2-4 PHP のインストール
 次は、PHPをインストールしていきます。  
 yumコマンドを使用してPHPをインストールした場合、古いバージョンのPHPがインストールされてしまいます。  
 そのため、yumではなく外部パッケージツールをダウンロードして、そこからPHPをインストールしていきます。
@@ -140,10 +189,15 @@ sudo rpm -Uvh remi-release-7.rpm (注12, 13)
 sudo yum -y install --enablerepo=remi-php73 php php-pdo php-mysqlnd php-mbstring php-xml php-fpm php-common php-devel php-mysql unzip (注14)
 
 php -v  
-```
-最後にPHPのバージョンが確認できれば、PHPのインストールは完了です。 
 
-### composerのインストール 
+バージョンが表示されれば、問題なくインストールされています。  
+
+PHP 7.3.28 (cli) (built: Apr 27 2021 13:57:06) ( NTS )
+```
+
+PHPのバージョンが確認できれば、PHPのインストールは完了です。 
+
+### 2-5 composerのインストール 
 次にPHPのパッケージ管理ツールであるcomposerをインストールしていきます。  
 
 ```
@@ -161,14 +215,22 @@ sudo mv composer.phar /usr/local/bin/composer
 
 バージョンの確認
 composer -v  
-```
 
-composer のバージョンが確認できましたら問題ないです。
+以下が出力されれば、問題なくインストールできています。
+  ______
+  / ____/___  ____ ___  ____  ____  ________  _____
+ / /   / __ \/ __ `__ \/ __ \/ __ \/ ___/ _ \/ ___/
+/ /___/ /_/ / / / / / / /_/ / /_/ (__  )  __/ /
+\____/\____/_/ /_/ /_/ .___/\____/____/\___/_/
+                    /_/
+Composer version 2.0.14 2021-05-21 17:03:37
+
+```
 
 ここまでの処理が完了しましたら、ゲストOS内にPHP と composer コマンドの実行環境が整ったことになります。
 
 
-### LaravelのInstallとProjectの作成
+### 3-1 LaravelのInstallとProjectの作成
 ```
 下記のコマンドで、LaravelのインストールとProject の作成を同時に行う
 composer create-project laravel/laravel --prefer-dist sample_app 6.0(注15,16)
@@ -182,11 +244,12 @@ cd sample_app
 
 Laravel のバージョンを確認
 php artisan --version  
-```
 
 Laravel のバージョンが確認できれば完了です。 
+Laravel Framework 6.20.27
+```
 
-### データベースのインストール  
+### 4-1 データベースのインストール  
 今回使用するデータベースである、MySQLのバージョン5,7をインストールします。  
 centos7は、デフォルトでmariaDBというデータベースがインストールされていますが、MariaDBはMySQLと互換性があるため、そのままMySQLのインストールを進めていきます。
 
@@ -202,6 +265,10 @@ sudo yum install -y mysql-community-server
 
 バージョンの確認
 mysql --version
+
+バージョンが表示されれば、問題なくインストールされています。  
+
+mysql  Ver 14.14 Distrib 5.7.34, for Linux (x86_64) using  EditLine wrapper
 ```
 
 バージョンの確認ができたら、インストール完了です。  
@@ -269,7 +336,7 @@ sudo systemctl restart mysqld
 mysql > set password = "新たなpassword";
 ```
 
-### データベースの作成
+### 4-2 データベースの作成
 実際にLaravelのTodoアプリケーションを動かす上で使用するデータベースの作成を行います。
 
 ```
@@ -278,11 +345,22 @@ mysql > create database sample_app;
 
 データベースの一覧を表示
 mysql > show databases;
+
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sample_app         |
+| sys                |
++--------------------+
+
 ```
 
 で、sample_appが表示されていれば、作成は完了となります。
 
-### Laravel側でDBを使用するための設定
+### 4-3 Laravel側でDBを使用するための設定
 Laravelに今回使用するDBは、XXXだよとDBの接続情報を教えてあげる必要があります。  
 Laravelのプロジェクト直下に .env というfileがありますので、これに情報を書いていきます。
 
@@ -305,7 +383,7 @@ DB_PASSWORD=                # 編集(データベースのインストールで�
 
 上記のように変更することによって、Laravelで先程作成したdatabaseが使用可能になります。
 
-### テーブルの作成
+### 4-4 テーブルの作成
 Laravelをインストールした時から、databases/migrations/には以下の2ファイルが元々用意されています。これがテーブル作成の素（もと）になります。
 
 - 2014_10_12_000000_create_users_table
@@ -338,7 +416,7 @@ Migrated:  2014_10_12_000000_create_users_table
 created successfully のメッセージが表示されていれば、users テーブルが作成されています。  
 これがユーザーの情報を保存する、メインのテーブルになって来ます。 
 
-### ログイン機能の実装
+### 5-1 ログイン機能の実装
 次は、sample_app にログイン機能を付けていきます。  
 Laravel 6.0からはログイン機能は、laravel/uiという名前の別パッケージとして管理されるようになりました。そのため、まずはこのパッケージをインストールします。
 
@@ -359,7 +437,7 @@ php artisan ui vue --authコマンドで、認証に必要なすべてのビュ�
 
 <br>
 
-### Nginxのインストール
+### 6-1 Nginxのインストール
 まずは、Nginx(注20)の最新版をインストールしていきます。  
 vi エディタを使用して以下のファイルを作成します。
 
@@ -386,6 +464,10 @@ sudo yum install -y nginx
 
 バージョンの確認
 nginx -v  
+
+下記のように表示されると、問題なくインストールできています。
+
+nginx version: nginx/1.19.10
 ``` 
 
 Nginx のバージョンが確認できれば、Nginx を起動させてみましょう。
@@ -397,7 +479,7 @@ sudo systemctl start nginx
 
 ブラウザにて http://192.168.33.19 と入力し、NginxのWelcomeページが表示されましたら、問題なく動いています。
 
-### Laravelを動かす
+### 6-2 Laravelを動かす
 Laravel を動かすために、Nginx内の設定ファイルと、php-fpmの設定ファイルの編集を行います。
 
 使用しているOSがCentOSの場合、/etc/nginx/conf.d ディレクトリ下の default.conf ファイルが設定ファイルとなります。
@@ -430,7 +512,7 @@ server {
   # 下記は root を除いたlocation { } までのコメントが解除されていることを確認してください。
 
   location ~ \.php$ {
-  #    root           html;
+  #   root           html;
       fastcgi_pass   127.0.0.1:9000;
       fastcgi_index  index.php;
       fastcgi_param  SCRIPT_FILENAME  /$document_root/$fastcgi_script_name;  # $fastcgi_script_name以前を /$document_root/に変更
@@ -479,7 +561,7 @@ sudo systemctl start php-fpm
 
 ***
 
-### 1. ファイヤーウォールに対してhttp通信によるアクセスを許可
+### 6-3 ファイヤーウォールに対してhttp通信によるアクセスを許可
 表示されている文言の下部に「ファイヤーウォール」(注25)という単語が確認できますでしょうか？  
 聞きなれない単語かと思いますが、セキュリティの観点では「ファイヤーウォール」は大切な機能であるため、起動状態のままホストOS側からアクセスできるようにしてあげましょう。
 
@@ -507,7 +589,7 @@ sudo firewall-cmd --reload
 Laravelのwelcome画面が表示されたでしょうか。
 もし表示されない場合は、次の処理に進んでください。
 
-### 2. Forbidden 403 というエラーが出た場合
+### 6-4 Forbidden 403 というエラーが出た場合
 (Laravelのwelcomeページが表示されたり、他のエラーが出ている場合は3に進んでください。)
 
 viエディタを使用してSELinux(注26)の設定を変更します。
@@ -548,6 +630,8 @@ vagrant ssh
 
 コマンドで打ち、Disabled になっていれば完璧
 getenforce
+
+Disabled
 ```
 
 再度Nginx を起動してみてください。
@@ -558,7 +642,7 @@ sudo systemctl start nginx
 
 これでForbidden 403 のページは出なくなったはずです。
 
-### 3. 操作権限の付与
+### 6-5 操作権限の付与
 画面上に、以下のようなLaravelのエラーが表示される場合は、操作権限がないことが原因となります。
 
 ```
@@ -593,7 +677,7 @@ sudo chmod -R 777 storage(注27, 注28)
 
 ここまで完了すれば、Laravelの最初のページが表示されると思います!! 
 
-### 実際の新規登録
+### 7-1 実際の新規登録
 それでは、実際に新規登録を行ってみましょう。  
 http://192.168.33.19/register  
 が新規登録のURLとなります。
@@ -608,26 +692,10 @@ http://192.168.33.19/register
 画面一番上にLaravel、次に自分の名前が記載されているページが現れれば、完了となります。  
 お疲れ様でした!!
 
-※もしPermission deniedが画面上に現れた場合、下記をお試しください。
-
-### 新規登録とログインの際の権限付与
-Permission deniedが画面上に現れた場合、/sample_app/storage/framework/sessions に対しての権限がないことが原因です。  
-下記コマンドを実行してください。
-
-```
-sample_appディレクトリに移動
-cd vagrant/sample_app
-
-権限を変更
-chmod -R 777 storage
-```
-
-これで、Permission denied は解決するはずです。
-
 <br>
 
 ***
-## 追加説明
+## 8-1 追加説明
 手順書の流れをより理解頂くために、こちらに追加の説明を記述しています。  
 より詳細を知りたい場合には、参考サイトにリンクを載せてますので、ご確認頂ければ幸いです。
 
@@ -699,48 +767,23 @@ rpmとは、RedHatという会社が開発した、パッケージ管理ツー�
 ただyum と異なる点として、rpmはパッケージ自体を管理することはできますが、その管理対象のパッケージの依存関係までは管理することはできません。
 
 ### (注13) remi 
- remi というプロジェクトのリポジトリを利用することで、yumを使って必要なバージョンのPHPをインストールすることができます。
+remi というプロジェクトのリポジトリを利用することで、yumを使って必要なバージョンのPHPをインストールすることができます。
 
- ### (注14) install 以降の処理
- install 以降で、PHPのインストールと同時に、PHPアプリケーションを動かす上で必要となる拡張機能をインストールしています。  
+### (注14) install 以降の処理
+install 以降で、PHPのインストールと同時に、PHPアプリケーションを動かす上で必要となる拡張機能をインストールしています。  
 
-```
-enablerepo=remi-php73  
-今回使用するPHP7.3
-
-php-pdo  
-PHPとデータベースを接続するためのもの
-
-php-mysqlnd  
-MySQL Native Driver の略で、遅延接続やクエリのキャッシュなどの機能が搭載されている
-
-php-mbstring  
-日本語などマルチバイト文字が使えるようになる
-
-php-xml  
-PHPからXMLを取り扱うために必要  
-※XMLとは、文章の見た目や構造を記述するためのマークアップ言語の一種です。  
-簡単に言うと、HTMLが人間に対して情報をわかりやすく表示するための言語に対して、XMLはマシンに情報をわかりやすく、効率良く伝えるための言語です。
-
-php-fpm  
-fpm(FastCGI Process Manager)は、主に高負荷のサイトで有用な追加機能を用意している  
-また、Nginx を使用してPHPアプリケーションを動かす際に必須  
-具板的な機能については、参考サイトの`FastCGI Process Manager (FPM)`をご確認ください。
-
-php-common  
-php-common パッケージには、php package と php-cli package の両方で使われているファイルを含んでいる  
-詳細については、参考サイトの`RPM resource php-common`をご確認ください。
-
-php-devel  
-開発に必要なヘッダファイル等が含まれている
-
-php-mysql  
-MySQL データベースサーバーへとアクセスできるようにするためのもの
-
-unzip  
-zip ファイルからファイルを取り出すためのコマンド
-
-```
+| コマンド名 | 役割 |
+| ---- |---- |
+| enablerepo=remi-php73 | 今回使用するPHP7.3 |
+| php-pdo | PHPとデータベースを接続するためのもの |
+| php-mysqlnd | 遅延接続やクエリのキャッシュなどの機能が搭載されている |
+| php-mbstring | 日本語などマルチバイト文字が使えるようになる |
+| php-xml | PHPからXMLを取り扱うために必要 |
+| php-fpm | 主に高負荷のサイトで有用な追加機能を用意している |
+| php-common | php package と php-cli package の両方で使われているファイルを含んでいる |
+| php-devel | 開発に必要なヘッダファイル等が含まれている |
+| php-mysql | MySQL データベースサーバーへとアクセスできるようにするためのもの |
+| unzip | zip ファイルからファイルを取り出すためのコマンド |
 
 ### (注15) create-project
 Composer のcreate-project コマンドを実行することで、Laravelをインストールできます。今回は6.0のバージョンをインストールしています。  
@@ -904,7 +947,7 @@ r ＝ 読み取り / w ＝ 書き込み / x ＝ 実行
 
 ***
 
-## 環境構築の所感
+## 9-1 環境構築の所感
 環境構築を通して、学んだことや感じたことは、下記でございます。
 
 ①バージョンを確認することの重要性  
@@ -940,7 +983,7 @@ r ＝ 読み取り / w ＝ 書き込み / x ＝ 実行
 
 <br>
 
-## 参考サイト
+## 10-1 参考サイト
 - [Qiita Markdown 書き方 まとめ](https://qiita.com/shizuma/items/8616bbe3ebe8ab0b6ca1)
 
 - [Markdown記法 チートシート](https://qiita.com/Qiita/items/c686397e4a0f4f11683d)
