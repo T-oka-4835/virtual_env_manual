@@ -13,6 +13,36 @@ Vagrantを用いて仮想環境を構築し、
 また、本書内で(注)となっている箇所に関しては、下部の追加説明にて詳しい説明を  
 書いておりますので、適宜ご参照頂ければと存じます。
 
+***
+
+## 目次
+
+- バージョン情報
+- 環境構築  
+  - Vagrant 作業用ディレクトリの作成
+    - Vagrantfile の編集
+    - Vagrant プラグインのインストール  
+    - Vagrant を使用してゲストOSの起動
+  - ゲストOSへのログイン
+    - パッケージのインストール
+    - PHPのインストール
+    - composerのインストール
+  - Laravel のInstallと、Project の作成
+  - データベースのインストール
+    - データベースの作成
+    - Laravel側でDBを使用するための設定
+    - テーブルの作成
+  - sample_appへのログイン機能の実装
+  - Nginx のインストール
+    - Nginx内でLaravelを動かす
+    - アプリが動かなかった時(ファイヤーウォール編)
+    - アプリが動かなかった時(Forbidden 403編)
+    - アプリが動かなかった時(操作権限編)
+  - 実際に新規登録
+  - 追加説明
+- 所感
+- 参考サイト一覧
+
 *** 
 
 ## バージョン一覧
@@ -21,46 +51,10 @@ Vagrantを用いて仮想環境を構築し、
 | ---- |---- |
 | PHP | 7.3 |
 | Laravel | 6.0 |
-| Nginx | 
+| Nginx | 1.19.10 |
 | MySQL | 5.7 |
 | OS | CentOS7 |
 
-***
-
-## 目次
-
-1. - 1-1 Vagrant 作業用ディレクトリの作成
-   - 1-2 Vagrantfile の編集
-   - 1-3 Vagrant プラグインのインストール  
-
-2. - 2-1 Vagrant を使用してゲストOSの起動
-   - 2-2 ゲストOSへのログイン
-   - 2-3 パッケージのインストール
-   - 2-4 PHPのインストール
-   - 2-5 composerのインストール
-
-3. - 3-1 Laravel のInstallと、Project の作成
-
-4. - 4-1 データベースのインストール
-   - 4-2 データベースの作成
-   - 4-3 Laravel側でDBを使用するための設定
-   - 4-4 テーブルの作成
-
-5. - 5-1 sample_appへのログイン機能の実装
-
-6. - 6-1 Nginx のインストール
-   - 6-2 Nginx内でLaravelを動かす
-   - 6-3 アプリが動かなかった時(ファイヤーウォール編)
-   - 6-4 アプリが動かなかった時(Forbidden 403編)
-   - 6-5 アプリが動かなかった時(操作権限編)
-
-7. - 7-1 実際に新規登録
-
-8. - 8-1 追加説明
-
-9. - 9-1 所感
-
-10. - 10-1 参考サイト一覧 
 ***
 
 ## 環境構築の流れ
@@ -68,7 +62,7 @@ Vagrantを用いて仮想環境を構築し、
 まず最初に、ご自身の作業用ディレクトリかデスクトップに、Vagrant の作業用ディレクトリを作成してください。  
 ※作成したディレクトリを後々移動すると、ゲストOSへのログインが上手く行かなくなってしまうので、ご注意ください。
 
-```
+```shell 
 ディレクトリ作成のコマンド  
 mkdir laravel_app_by_vagrant  
 ```
@@ -76,7 +70,7 @@ mkdir laravel_app_by_vagrant
 ディレクトリは作成できましたか?  
 作成できたら、下記の順番で進めて行きましょう。
 
-``` 
+```shell
 mkdir で作成したディレクトリに移動  
 cd laravel_app_by_vagrant  
 
@@ -91,7 +85,7 @@ vagrant init を実行後、"A Vagrantfile has been placed in this directory" �
 今回は三箇所の編集を行います。  
 ファイルをエディタで開いてください。
 
-```
+```shell
 1. config.vm.network "forwarded_port", guest: 80, host: 8080(注2)
 
 2. config.vm.network "private_network", ip:"192.168.33.10"(注3)
@@ -101,7 +95,7 @@ vagrant init を実行後、"A Vagrantfile has been placed in this directory" �
 
 また、
 
-```
+```shell
 config.vm.network "private_network", ip:"192.168.33.10"
 を
 config.vm.network "private_network", ip:"192.168.33.19"
@@ -109,7 +103,7 @@ config.vm.network "private_network", ip:"192.168.33.19"
 
 へと変更してください。
 
-```
+```shell
 3. config.vm.synced_folder "../data", "/vagrant_data" 
    のコメントを外し、  
    config.vm.synced_folder "./", "/vagrant", type:"virtualbox"(注4)
@@ -121,14 +115,17 @@ config.vm.network "private_network", ip:"192.168.33.19"
 Vagrant には様々なプラグイン(拡張機能)が用意されており、今回はvagrant-vbguest(注5) という   
 プラグインをインストールします。
 
-```
+```shell
 プラグインのインストールコマンド
 vagrant plugin install vagrant-vbguest  
 
 正常にインストールが完了しているか確認
 vagrant plugin list 
+```
 
 バージョンが表示されれば、問題なくインストールされています。
+
+```shell
 vagrant-vbguest (0.21.0, global)
 ```
 
@@ -138,7 +135,7 @@ vagrant-vbguest (0.21.0, global)
 ### 2-1 Vagrantを使用してゲストOSの起動
 laravel_app_by_vagrantディレクトリにて以下のコマンドを実行することで、ゲストOSを立ち上げることができます。
 
-```
+```shell
 vagrant up
 ```
 
@@ -150,7 +147,7 @@ vagrant up
 
 今回は、VirtualBoxが提供するネットワークを通じて、ターミナル上でホストOSからゲストOS(リモートマシン)にログインします。  
 
-```
+```shell
 ssh はリモートマシンにログインするコマンド
 vagrant ssh 
 ```
@@ -160,7 +157,7 @@ vagrant ssh
 #### 今後の注意点
 この先でのコマンドや操作において、今ご自身がホストOSとゲストOSのどちらをコマンドラインで操作しているのか、常に意識しながら進めてください。
 
-```
+```shell
 - ホストOS  
 ユーザー名noMacbook:~ ユーザー名$
 - ゲストOS  
@@ -169,7 +166,7 @@ vagrant ssh
 
 ### 2-3 パッケージのインストール
 
-```
+```shell
 このコマンドで、開発に必要なパッケージを一括でインストールすることができる(注6〜9)  
 sudo yum -y groupinstall "development tools"  
 ```
@@ -179,7 +176,7 @@ sudo yum -y groupinstall "development tools"
 yumコマンドを使用してPHPをインストールした場合、古いバージョンのPHPがインストールされてしまいます。  
 そのため、yumではなく外部パッケージツールをダウンロードして、そこからPHPをインストールしていきます。
 
-```
+```shell
 sudo yum -y install epel-release wget (注10)
 
 sudo wget http://rpms.famillecollet.com/enterprise/remi-release-7.rpm (注11)
@@ -189,9 +186,11 @@ sudo rpm -Uvh remi-release-7.rpm (注12, 13)
 sudo yum -y install --enablerepo=remi-php73 php php-pdo php-mysqlnd php-mbstring php-xml php-fpm php-common php-devel php-mysql unzip (注14)
 
 php -v  
+```
 
-バージョンが表示されれば、問題なくインストールされています。  
+下記のようにバージョンが表示されれば、問題なくインストールされています。  
 
+```shell
 PHP 7.3.28 (cli) (built: Apr 27 2021 13:57:06) ( NTS )
 ```
 
@@ -200,8 +199,8 @@ PHPのバージョンが確認できれば、PHPのインストールは完了�
 ### 2-5 composerのインストール 
 次にPHPのパッケージ管理ツールであるcomposerをインストールしていきます。  
 
-```
-composer の一部である、installer ファイルと、セットアップ用PHPスクリプトの`composer-setup.php`をダウンロード
+```php
+# composer の一部である、installer ファイルと、セットアップ用PHPスクリプトの`composer-setup.php`をダウンロード
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"  
 
 ダウンロードした composer-setup.php を実行して、Composer の実行ファイルを作成
@@ -215,8 +214,11 @@ sudo mv composer.phar /usr/local/bin/composer
 
 バージョンの確認
 composer -v  
+```
 
 以下が出力されれば、問題なくインストールできています。
+
+```shell
   ______
   / ____/___  ____ ___  ____  ____  ________  _____
  / /   / __ \/ __ `__ \/ __ \/ __ \/ ___/ _ \/ ___/
@@ -231,21 +233,25 @@ Composer version 2.0.14 2021-05-21 17:03:37
 
 
 ### 3-1 LaravelのInstallとProjectの作成
-```
+```shell
 下記のコマンドで、LaravelのインストールとProject の作成を同時に行う
 composer create-project laravel/laravel --prefer-dist sample_app 6.0(注15,16)
 ```
 
 sample_app というディレクトリが作成されましたか? 作成されていれば、下記を実行してください。
 
-```
+```shell
 sample_app ディレクトリに移動
 cd sample_app  
 
 Laravel のバージョンを確認
 php artisan --version  
 
+```
+
 Laravel のバージョンが確認できれば完了です。 
+
+```shell
 Laravel Framework 6.20.27
 ```
 
@@ -253,7 +259,7 @@ Laravel Framework 6.20.27
 今回使用するデータベースである、MySQLのバージョン5,7をインストールします。  
 centos7は、デフォルトでmariaDBというデータベースがインストールされていますが、MariaDBはMySQLと互換性があるため、そのままMySQLのインストールを進めていきます。
 
-```
+```shell
 wget で、mysql.com から、mysql5.7のファイルをダウンロード 
 sudo wget https://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm  
 
@@ -265,9 +271,11 @@ sudo yum install -y mysql-community-server
 
 バージョンの確認
 mysql --version
+```
 
 バージョンが表示されれば、問題なくインストールされています。  
 
+```shell
 mysql  Ver 14.14 Distrib 5.7.34, for Linux (x86_64) using  EditLine wrapper
 ```
 
@@ -275,7 +283,7 @@ mysql  Ver 14.14 Distrib 5.7.34, for Linux (x86_64) using  EditLine wrapper
 次にMySQLを起動し接続を行います。  
 ただその前に、デフォルトでrootパスワードが設定されているため、passwordを調べ、接続し、password の再設定を行う必要があります。
 
-```
+```shell
 MySQLの起動
 sudo systemctl start mysqld  
 
@@ -284,7 +292,7 @@ sudo cat /var/log/mysqld.log | grep 'temporary password' (注17,18)
 
 このコマンド実行後、下記のように表示されると、問題ないです。
 
-```
+```shell
 2017-01-01T00:00:00.000000Z 1 [Note] A temporary password is generated for root@localhost: hogehoge 
 ```
 
@@ -292,7 +300,7 @@ hogehoge と記載されている箇所に存在するランダムな文字列�
 
 出力したランダムな文字列をコピーし、以下のコマンドを実行してください。
 
-```
+```shell
 MySQLへと接続
 mysql -u root -p
 
@@ -307,11 +315,11 @@ mysql >
 
 MySQL5.7のパスワードポリシーは厳格で開発段階では非常に面倒のため、以下の設定を行いシンプルなパスワードに初期設定できるようにMySQLの設定ファイルを変更します。
 
-```
+```shell
 sudo vi /etc/my.cnf
 ```
 
-```
+```shell
 [mysqld]
 
 read_rnd_buffer_size = 2M  
@@ -324,13 +332,13 @@ validate-password=OFF
 
 編集後はMySQLサーバの再起動が必要です。
 
-```
+```shell
 sudo systemctl restart mysqld
 ```
 
 再起動後、再度MySQLにログインし、下記のコマンドを実行してください。
 
-```
+```shell
 ※新たなpasswordには、必ず大文字小文字の英数字 + 記号かつ8文字以上の設定をする必要があります。  
 上記が無事終了すれば、MySQLの導入と設定が完了となります。
 mysql > set password = "新たなpassword";
@@ -339,7 +347,7 @@ mysql > set password = "新たなpassword";
 ### 4-2 データベースの作成
 実際にLaravelのTodoアプリケーションを動かす上で使用するデータベースの作成を行います。
 
-```
+```shell
 新しいデータベースを作成
 mysql > create database sample_app;
 
@@ -364,7 +372,7 @@ mysql > show databases;
 Laravelに今回使用するDBは、XXXだよとDBの接続情報を教えてあげる必要があります。  
 Laravelのプロジェクト直下に .env というfileがありますので、これに情報を書いていきます。
 
-```
+```shell
 APP_NAME=Laravel  
 APP_ENV=local  
 APP_KEY=base64:Rs6WHziGChaNJGg0o1mBOidiKaFZPkKeHNt6aGamvYk=  
@@ -395,13 +403,13 @@ Laravelをインストールした時から、databases/migrations/には以下�
 artisanコマンドは必ずLaravelプロジェクト直下に移動してから実行しましょう。  
 今回だとゲストOS内のsample_app/ です。
 
-```
+```php
 php artisan migrate (注19)
 ```
 
 以下のようなメッセージが表示されれば成功です。
 
-```
+```shell
 Migration table created successfully.
 Migrating: 2014_10_12_000000_create_users_table
 Migrated:  2014_10_12_000000_create_users_table
@@ -420,13 +428,13 @@ created successfully のメッセージが表示されていれば、users テ�
 次は、sample_app にログイン機能を付けていきます。  
 Laravel 6.0からはログイン機能は、laravel/uiという名前の別パッケージとして管理されるようになりました。そのため、まずはこのパッケージをインストールします。
 
-```
+```shell
 composer require laravel/ui:^1.0 --dev
 ```
 
 インストールが完了したら、下記のコマンドを実行してください。
 
-```
+```php
 php artisan ui vue --auth
 ```
 
@@ -441,13 +449,13 @@ php artisan ui vue --authコマンドで、認証に必要なすべてのビュ�
 まずは、Nginx(注20)の最新版をインストールしていきます。  
 vi エディタを使用して以下のファイルを作成します。
 
-```
+```shell
 sudo vi /etc/yum.repos.d/nginx.repo
 ```
 
 ファイルが作成されたら、以下の内容を書き込んでください。
 
-```
+```shell
 [nginx]  
 name=nginx repo  
 baseurl=https://nginx.org/packages/mainline/centos/\$releasever/\$basearch/  
@@ -458,21 +466,23 @@ enabled=1
 
 書き終えたら保存し、以下のコマンドでNginx のインストールを実行します。
 
-``` 
+```shell
 Nginx のインストール
 sudo yum install -y nginx  
 
 バージョンの確認
 nginx -v  
+```
 
 下記のように表示されると、問題なくインストールできています。
 
+```shell
 nginx version: nginx/1.19.10
 ``` 
 
 Nginx のバージョンが確認できれば、Nginx を起動させてみましょう。
 
-```
+```shell
 Nginx の起動
 sudo systemctl start nginx  
 ```
@@ -484,13 +494,13 @@ Laravel を動かすために、Nginx内の設定ファイルと、php-fpmの設
 
 使用しているOSがCentOSの場合、/etc/nginx/conf.d ディレクトリ下の default.conf ファイルが設定ファイルとなります。
 
-```
+```shell
 sudo vi /etc/nginx/conf.d/default.conf
 ```
 
 下記のように変更してください。 
 
-```
+```shell
 server {
   listen       80; (注22)
   server_name  192.168.33.19; # Vagranfileでコメントを外した箇所のipアドレスを記述してください。
@@ -526,13 +536,13 @@ server {
 Nginx の設定ファイルの変更は、以上です。  
 次に php-fpm の設定ファイルを編集していきます。
 
-```
+```shell
 sudo vi /etc/php-fpm.d/www.conf
 ```
 
 変更箇所は以下になります。
 
-```
+```shell
 24行目近辺
 user = apache
 # ↓ 以下に編集
@@ -546,7 +556,7 @@ group = nginx
 設定ファイルの変更に関しては、以上となります。
 では、下記の2つのコマンドを実行し、ブラウザを確認してみましょう。
 
-```
+```shell
 nginx の再起動
 sudo systemctl restart nginx
 
@@ -566,7 +576,7 @@ sudo systemctl start php-fpm
 聞きなれない単語かと思いますが、セキュリティの観点では「ファイヤーウォール」は大切な機能であるため、起動状態のままホストOS側からアクセスできるようにしてあげましょう。
 
 Vagrantfileの編集をした際、
-```
+```shell
 config.vm.network "forwarded_port", guest: 80, host: 8080 
 ```
 
@@ -576,7 +586,7 @@ config.vm.network "forwarded_port", guest: 80, host: 8080
 
 なのでファイヤーウォールに対してこの80ポートを経由したhttp通信によるアクセスを許可するためのコマンドを実行します。
 
-```
+```shell
 ファイヤーウォールの起動
 sudo systemctl start firewalld.service
 sudo firewall-cmd --add-service=http --zone=public --permanent
@@ -595,13 +605,13 @@ Laravelのwelcome画面が表示されたでしょうか。
 viエディタを使用してSELinux(注26)の設定を変更します。
 「SELinux コンテキスト」の不一致によりエラーが出ているので、SELinuxを無効化します。
 
-```
+```shell
 sudo vi /etc/selinux/config
 ```
 
 viエディタが開き設定ファイルが表示されるので下記の部分を探してください。
 
-```
+```shell
 # This file controls the state of SELinux on the system.
 # SELINUX= can take one of these three values:
 # enforcing - SELinux security policy is enforced.
@@ -612,20 +622,20 @@ SELINUX=enforcing
 
 一番下を、
 
-```
+```shell
 SELINUX=disabled
 ```
 
 に変更した後、設定を反映させるためにゲストOSを再起動させます。
 
-```
+```shell
 exit
 vagrant reload
 ```
 
 リロードが完了したら再度ゲストOSにログインしましょう。
 
-```
+```shell
 vagrant ssh
 
 コマンドで打ち、Disabled になっていれば完璧
@@ -636,7 +646,7 @@ Disabled
 
 再度Nginx を起動してみてください。
 
-```
+```shell
 sudo systemctl start nginx
 ```
 
@@ -645,14 +655,14 @@ sudo systemctl start nginx
 ### 6-5 操作権限の付与
 画面上に、以下のようなLaravelのエラーが表示される場合は、操作権限がないことが原因となります。
 
-```
+```shell
 The stream or file "/vagrant/laravel_app/storage/logs/laravel.log" could not be opened: failed to open stream: Permission denied
 ```
 
 これは 先程php-fpmの設定ファイルの user と group を nginx に変更したと思いますが、ファイルとディレクトリの実行 user と group に nginx が許可されていないため起きているエラーです。  
 試しに以下のコマンドを実行してみてください。
 
-```
+```shell
 ls -la ./ | grep storage && ls -la storage/ | grep logs && ls -la storage/logs/ | grep laravel.log
 ```
 
@@ -661,7 +671,7 @@ vagrant となっていますので、これでは nginx というユーザー�
 
 そのため、以下のコマンドを実行して、nginx というユーザーでもログファイルへの書き込みができる権限を付与しましょう。
 
-```
+```shell
 sample_appのディレクトリへと移動
 cd /vagrant/sample_app
 
@@ -846,13 +856,13 @@ nginxにはStableとMainlineの2つのバージョンが存在し、yumリポジ
 listen には、サーバーがリクエストを受け付けるIPアドレスやポート番号、あるいはUNIXドメインソケットを設定します。  
 
 IPアドレスを指定するときは、  
-```
+```shell
 listen IPアドレス:ポート番号;
 ```
 
 としますが、ポート番号のデフォルト値は80であるため、今回のように
 
-```
+```shell
 listen 80;
 ```
 
@@ -896,7 +906,7 @@ SELinux が適用され，アクセス制御が有効になっている状態で
 chmodコマンドは、操作権限を変更するためのコマンドです。  
 例えばls -laコマンドを打ち、下記のように表示されたとします。
 
-```
+```shell
 -rw-r--r--  1 user group      9  1月 1 00:00 hoge.txt
 ```
 
